@@ -1,13 +1,18 @@
 {
   "name": "MSL Starter — Speed-to-Lead Router + Error Circuit Breaker",
-  "meta": {
-    "owner": "MSL AI Systems (https://portfolio-msl.lovable.app/)",
-    "diagnostic": "https://auditiq.ai.studio",
-    "templateVersion": "1.0.0",
-    "autonomyLevel": "L2 (Deterministic Plumbing + Isolated AI Qualifier)",
-    "license": "MIT"
-  },
   "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚡ MSL AI Systems — Starter Speed-to-Lead Router\n**Diagnostic Platform:** https://auditiq.ai.studio\n**Portfolio:** https://portfolio-msl.lovable.app/\n**Autonomy Level:** L2 (Deterministic Plumbing + Isolated AI Classifier)\n\n### Quick Setup:\n1. Configure your OpenAI credential on Node 03 (or leave as-is to test the deterministic fallback).\n2. Set `ALERT_WEBHOOK_URL` and `ERROR_ALERT_WEBHOOK_URL` in your n8n environment.\n3. Test Node 01 -> Node 02 before activating.",
+        "height": 240,
+        "width": 500
+      },
+      "id": "b1b2c3d4-0000-4000-8000-000000000000",
+      "name": "MSL AI Systems — Blueprint Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [220, 0]
+    },
     {
       "parameters": {
         "httpMethod": "POST",
@@ -15,17 +20,18 @@
         "responseMode": "onReceived",
         "options": {}
       },
-      "id": "node-1-webhook-ingress",
+      "id": "b1b2c3d4-0001-4000-8000-000000000001",
       "name": "01_Webhook_Lead_Ingress",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [240, 300],
+      "webhookId": "b1b2c3d4-0001-4000-8000-000000000001"
     },
     {
       "parameters": {
         "jsCode": "// Block 1: Deterministic E.164 Phone & Email Hygiene\nconst body = $input.first().json.body || $input.first().json;\nconst rawPhone = String(body.phone || '').replace(/[^0-9+]/g, '');\nlet e164Phone = rawPhone;\nif (rawPhone.startsWith('0') && rawPhone.length === 11) {\n  e164Phone = '+234' + rawPhone.slice(1);\n} else if (!rawPhone.startsWith('+') && rawPhone.length >= 10) {\n  e164Phone = '+' + rawPhone;\n}\n\nreturn [{\n  json: {\n    lead_id: `LEAD-${Date.now()}`,\n    full_name: String(body.name || 'Unknown Lead').trim(),\n    email: String(body.email || '').trim().toLowerCase(),\n    phone_e164: e164Phone,\n    whatsapp_url: e164Phone ? `https://wa.me/${e164Phone.replace('+', '')}` : '',\n    company: String(body.company || '').trim(),\n    inquiry_notes: String(body.notes || body.message || '').trim(),\n    source: String(body.source || 'webform').trim(),\n    received_at: new Date().toISOString()\n  }\n}];"
       },
-      "id": "node-2-data-hygiene",
+      "id": "b1b2c3d4-0002-4000-8000-000000000002",
       "name": "02_Sanitize_E164_And_Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -44,7 +50,7 @@
           "timeout": 8000
         }
       },
-      "id": "node-3-isolated-ai-qualifier",
+      "id": "b1b2c3d4-0003-4000-8000-000000000003",
       "name": "03_Isolated_AI_Lead_Classifier",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -60,7 +66,7 @@
         "jsonBody": "={\n  \"text\": \"New Lead: {{ $('02_Sanitize_E164_And_Email').item.json.full_name }} ({{ $('02_Sanitize_E164_And_Email').item.json.company }})\\nWhatsApp 1-Click: {{ $('02_Sanitize_E164_And_Email').item.json.whatsapp_url }}\"\n}",
         "options": {}
       },
-      "id": "node-4-instant-dispatch",
+      "id": "b1b2c3d4-0004-4000-8000-000000000004",
       "name": "04_Instant_WhatsApp_Slack_Dispatch",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -68,7 +74,7 @@
     },
     {
       "parameters": {},
-      "id": "node-5-error-trigger",
+      "id": "b1b2c3d4-0005-4000-8000-000000000005",
       "name": "99_Error_Circuit_Breaker",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -83,13 +89,14 @@
         "jsonBody": "={\n  \"text\": \"[CIRCUIT BREAKER ALERT] Workflow failed at node {{ $json.execution.lastNodeExecuted }}: {{ $json.execution.error.message }}\"\n}",
         "options": {}
       },
-      "id": "node-6-error-alert",
+      "id": "b1b2c3d4-0006-4000-8000-000000000006",
       "name": "99_Dispatch_Error_Alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [720, 540]
     }
   ],
+  "pinData": {},
   "connections": {
     "01_Webhook_Lead_Ingress": {
       "main": [
@@ -135,5 +142,12 @@
         ]
       ]
     }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
   }
 }
