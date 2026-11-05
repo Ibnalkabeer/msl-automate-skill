@@ -1,0 +1,139 @@
+{
+  "name": "MSL Starter — Speed-to-Lead Router + Error Circuit Breaker",
+  "meta": {
+    "owner": "MSL AI Systems (https://portfolio-msl.lovable.app/)",
+    "diagnostic": "https://auditiq.ai.studio",
+    "templateVersion": "1.0.0",
+    "autonomyLevel": "L2 (Deterministic Plumbing + Isolated AI Qualifier)",
+    "license": "MIT"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-1-webhook-ingress",
+      "name": "01_Webhook_Lead_Ingress",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Block 1: Deterministic E.164 Phone & Email Hygiene\nconst body = $input.first().json.body || $input.first().json;\nconst rawPhone = String(body.phone || '').replace(/[^0-9+]/g, '');\nlet e164Phone = rawPhone;\nif (rawPhone.startsWith('0') && rawPhone.length === 11) {\n  e164Phone = '+234' + rawPhone.slice(1);\n} else if (!rawPhone.startsWith('+') && rawPhone.length >= 10) {\n  e164Phone = '+' + rawPhone;\n}\n\nreturn [{\n  json: {\n    lead_id: `LEAD-${Date.now()}`,\n    full_name: String(body.name || 'Unknown Lead').trim(),\n    email: String(body.email || '').trim().toLowerCase(),\n    phone_e164: e164Phone,\n    whatsapp_url: e164Phone ? `https://wa.me/${e164Phone.replace('+', '')}` : '',\n    company: String(body.company || '').trim(),\n    inquiry_notes: String(body.notes || body.message || '').trim(),\n    source: String(body.source || 'webform').trim(),\n    received_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "node-2-data-hygiene",
+      "name": "02_Sanitize_E164_And_Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"temperature\": 0.1,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an isolated B2B lead classifier. Return strict JSON with keys: priority (HIGH|MEDIUM|LOW), summary (max 20 words), and recommended_opener (1 sentence).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Company: {{ $json.company }} | Notes: {{ $json.inquiry_notes }}\"\n    }\n  ]\n}",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "id": "node-3-isolated-ai-qualifier",
+      "name": "03_Isolated_AI_Lead_Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"New Lead: {{ $('02_Sanitize_E164_And_Email').item.json.full_name }} ({{ $('02_Sanitize_E164_And_Email').item.json.company }})\\nWhatsApp 1-Click: {{ $('02_Sanitize_E164_And_Email').item.json.whatsapp_url }}\"\n}",
+        "options": {}
+      },
+      "id": "node-4-instant-dispatch",
+      "name": "04_Instant_WhatsApp_Slack_Dispatch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {},
+      "id": "node-5-error-trigger",
+      "name": "99_Error_Circuit_Breaker",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [480, 540]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ERROR_ALERT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"[CIRCUIT BREAKER ALERT] Workflow failed at node {{ $json.execution.lastNodeExecuted }}: {{ $json.execution.error.message }}\"\n}",
+        "options": {}
+      },
+      "id": "node-6-error-alert",
+      "name": "99_Dispatch_Error_Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 540]
+    }
+  ],
+  "connections": {
+    "01_Webhook_Lead_Ingress": {
+      "main": [
+        [
+          {
+            "node": "02_Sanitize_E164_And_Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02_Sanitize_E164_And_Email": {
+      "main": [
+        [
+          {
+            "node": "03_Isolated_AI_Lead_Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03_Isolated_AI_Lead_Classifier": {
+      "main": [
+        [
+          {
+            "node": "04_Instant_WhatsApp_Slack_Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "99_Error_Circuit_Breaker": {
+      "main": [
+        [
+          {
+            "node": "99_Dispatch_Error_Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
