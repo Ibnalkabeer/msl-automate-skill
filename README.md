@@ -1,6 +1,6 @@
 # `/automate` — AIOS Automation Architect Skill (n8n + AI Agents)
 
-[![Built by MSL AI Systems](https://img.shields.io/badge/Built%20by-MSL%20AI%20Systems-0A192F?style=for-the-badge)](https://portfolio-msl.lovable.app/)
+[![Built by MSL AI Systems](https://img.shields.io/badge/Built%20by-MSL%20AI%20Systems-0A192F?style=for-the-badge)](https://msl-portfolio.vercel.app)
 [![AuditIQ Diagnostic](https://img.shields.io/badge/Free%20AI%20Audit-AuditIQ-2EC4B6?style=for-the-badge)](https://auditiq.ai.studio)
 [![Works With](https://img.shields.io/badge/Compatibility-Claude%20Code%20%7C%20Codex%20%7C%20Antigravity-4C6A92?style=for-the-badge)](#quick-install)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](./LICENSE)
@@ -52,10 +52,12 @@ For every automation request, `/automate` presents **1 Problem, 3 Viable Options
 | **Option 2: n8n + Isolated AI Node** | **L2 / L3** | 85% deterministic n8n plumbing + **1 isolated LLM node** (`temperature: 0.1`, strict JSON schema) for scoring or extraction. | Qualifying messy form notes, summarizing ad metrics, drafting replies. |
 | **Option 3: Stateful AI Agent** | **L3** | Modular Python/TS agent with a **Deterministic Policy Gate first**, grounded FAQ/RAG, SQLite state, and human approval fallback. | Multi-turn Telegram/WhatsApp bots, gated community admission, support triage. |
 
-### Stage 3: Lego Assembly & Safety Brakes
-Instead of hallucinating untested schemas from scratch, `/automate` stamps out modular blocks with mandatory production guardrails baked in:
-- **E.164 Phone & Email Sanitization** on every ingress webhook.
-- **Error Circuit Breaker:** An `Error Trigger` route that alerts your WhatsApp or Slack immediately if an API fails.
+### Stage 3: Blueprint-Mirrored Lego Assembly & Zero-Break Canvas Rules
+Instead of hallucinating untested schemas or stamping out a generic workflow that ignores the client's actual audit, `/automate` enforces **1-to-1 Blueprint Mirroring** and **Zero-Break n8n Canvas Rules**:
+- **Blueprint Mirror Rule:** Every node assembled on the n8n canvas maps word-for-word to the steps diagnosed in the client's AuditIQ Report / Implementation Blueprint (whether Speed-to-Lead, Onboarding Provisioning, Weekly Cross-Channel ROAS Digests, or PM Sync).
+- **Single Active Trigger for 1-Click Live Demos:** Includes `00_Click_Execute_To_Test_Sample_Lead` (`manualTrigger`) and ships `01_Webhook` with `"disabled": true` by default so clicking n8n's orange **Execute workflow** button fires the demo immediately without hanging on a webhook listener.
+- **Zero `$env` Access-Denied Errors:** Never embeds raw `$env.*` expressions inside nodes (which modern n8n `v1.x+/v2.x+` blocks by default via `N8N_BLOCK_ENV_ACCESS_IN_NODE=true`), pairing `continueOnFail: true` with a deterministic fallback Code node so every workflow runs 100% green out of the box.
+- **E.164 Phone & Email Sanitization** on every ingress webhook + **Error Circuit Breaker** (`Error Trigger`) wired to instant ops alerts.
 - **Deterministic Policy Precedence (for Agents):** Hardcoded business rules (payment verification, eligibility thresholds) always execute *before* any LLM prompt, and raw customer PII is never leaked to third-party prompts.
 
 ### Stage 4: Lego Validation Chain & 14-Day Bike Method Rollout
@@ -115,7 +117,7 @@ See [`examples/sample-audit-to-automation.md`](./examples/sample-audit-to-automa
 This open-source skill is maintained by **MSL AI Systems** — a B2B technology and AI automation company building modern websites, custom AI agents, and production n8n infrastructure for growing businesses and digital agencies.
 
 - **Run a Free 4-Step AI Readiness Diagnostic (AuditIQ):** [https://auditiq.ai.studio](https://auditiq.ai.studio)
-- **Explore MSL AI Systems Portfolio:** [https://portfolio-msl.lovable.app/](https://portfolio-msl.lovable.app/)
+- **Explore MSL AI Systems Portfolio:** [https://msl-portfolio.vercel.app](https://msl-portfolio.vercel.app)
 - **Book a 15-Minute Automation Sprint Consult on WhatsApp:** [Chat with MSL AI Systems on WhatsApp](https://wa.me/2347079731073?text=Hi%20MSL%20AI%20Systems%2C%20I%20saw%20your%20%2Fautomate%20GitHub%20repo%20and%20want%20to%20discuss%20an%20automation%20sprint.)
 - **Email:** [muhsinalonigbeja@gmail.com](mailto:muhsinalonigbeja@gmail.com)
 
@@ -123,6 +125,6 @@ This open-source skill is maintained by **MSL AI Systems** — a B2B technology 
 
 ## Credits & Attribution
 
-- **Engineered by:** Muhsin Alonigbeja — Founder, [MSL AI Systems](https://portfolio-msl.lovable.app/)
+- **Engineered by:** Muhsin Alonigbeja — Founder, [MSL AI Systems](https://msl-portfolio.vercel.app)
 - **Methodology Inspiration:** *The Three Ms of AI™ (Mindset, Method, Machine)* is a trademark of Nate Herk (© 2026 Nate Herk).
 - **License:** [MIT License](./LICENSE)

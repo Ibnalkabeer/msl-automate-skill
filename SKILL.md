@@ -6,18 +6,19 @@ argument-hint: "[plain-English workflow idea | audit report | n8n vs agent quest
 
 # `/automate` — AIOS Automation Architect & Lego Assembler
 
-> **Maintained by [MSL AI Systems](https://portfolio-msl.lovable.app/) | Free AI Readiness Diagnostic: [AuditIQ](https://auditiq.ai.studio)**
+> **Maintained by [MSL AI Systems](https://msl-portfolio.vercel.app) | Free AI Readiness Diagnostic: [AuditIQ](https://auditiq.ai.studio)**
 >
 > **Governing Principle:** *"The best automation is the one you barely notice. Start by eliminating what doesn't need to exist, then automate what's left with the least amount of AI possible. Boring is Beautiful."*
 
 ---
 
-## Step 0: Resolve the Input (2 Modes)
+## Step 0: Resolve the Input & Enforce the Blueprint Mirror Rule
 
 Read what the user passed to `/automate` before asking questions:
 
-1. **Mode 1 — Operational Audit Report (e.g., AuditIQ):**
-   - Extract the company's niche, #1 operational bottleneck, readiness score, and target KPI from the Three Buckets (**Get more customers**, **Make each customer worth more**, or **Cut costs**).
+1. **Mode 1 — Operational Audit Report or Implementation Blueprint (e.g., AuditIQ):**
+   - Extract the company's niche, #1 operational bottleneck, readiness score, **every promised step in the Implementation Blueprint**, and target KPI from the Three Buckets (**Get more customers**, **Make each customer worth more**, or **Cut costs**).
+   - **THE BLUEPRINT MIRROR RULE:** Never generate a generic speed-to-lead template if the audit/blueprint specifies a different or multi-track system (e.g., *Cross-Channel ROAS Reporting + Lead Qualification*, *Client Onboarding & Drive Provisioning*, *Jira/PM Sync*, or *Approval Chasers*). Every node on the n8n canvas must map 1-to-1 to the exact steps promised in the client's audit/blueprint so the builder can demo the workflow side-by-side with the report.
 2. **Mode 2 — Plain-English Automation Request:**
    - Extract the trigger, systems involved, decision rules, and desired output directly from the prompt.
 
@@ -67,11 +68,14 @@ Present **1 Defined Problem, 3 Viable Architectural Options, and 1 Simplest Reco
 Generate the implementation artifacts so the human operator acts as the **verifier**, not the boilerplate typist:
 
 ### Path A — When Building an n8n Workflow (`Option 1` or `Option 2`)
-Use the structure in `templates/starter-speed-to-lead.n8n.json` (if bundled) and enforce four mandatory blocks:
-1. **Ingress & Data Hygiene Block:** Webhook or Schedule trigger followed immediately by a deterministic Code/Set node that normalizes phone numbers to `E.164` (`+234...`, `+1...`), lowercases emails, and strips whitespace.
-2. **Isolated AI Classifier Block (only if `Option 2`):** Single LLM/HTTP node returning strict JSON (`score`, `category`, `summary`, `confidence`) with `continueOnFail: true` so an LLM timeout never drops a lead.
-3. **Idempotent Destination Block:** Upsert to CRM/Google Sheets + instant WhatsApp/Slack dispatch with pre-filled 1-click contact links.
-4. **Error Circuit Breaker:** An `Error Trigger` node wired to an instant alert channel so silent failures are impossible.
+Use the structure in `templates/starter-speed-to-lead.n8n.json` (if bundled) and enforce these mandatory blocks and zero-break canvas rules:
+1. **Single Active Trigger for 1-Click Demos:** Always include `00. Click Execute to Test Sample Lead` (`n8n-nodes-base.manualTrigger`) AND set `"disabled": true` on `01. Webhook` (`n8n-nodes-base.webhook`). If both triggers are enabled simultaneously, n8n's orange **Execute workflow** button defaults to *"Execute workflow from 01. Webhook"* and hangs waiting for an external `POST`.
+2. **Zero `$env` Expressions:** Never use `$env.ANYTHING` inside node expressions or Code nodes (`N8N_BLOCK_ENV_ACCESS_IN_NODE=true` is default in modern n8n and throws `access to env vars denied`). Use literal safe strings alongside `continueOnFail: true` + a deterministic fallback Code node.
+3. **Canvas Top Margin for Sticky Notes:** Place `n8n-nodes-base.stickyNote` at `[180, 40]` (`height: 240`) and workflow nodes starting at `y: 340` (`[180, 340]`) so the top bar (`Editor | Executions | Evaluations`) never clips the Sticky Note header.
+4. **Ingress & Data Hygiene Block:** Webhook or Manual trigger followed immediately by a deterministic Code/Set node that normalizes phone numbers to `E.164` (`+234...`, `+1...`), lowercases emails, and strips whitespace.
+5. **Isolated AI Classifier Block (only if `Option 2`):** Single LLM/HTTP node returning strict JSON (`score`, `category`, `summary`, `confidence`) with `continueOnFail: true` + a deterministic fallback Code node so an LLM timeout or missing key never drops a lead.
+6. **Idempotent Destination Block:** Upsert to CRM/Google Sheets + instant WhatsApp/Slack dispatch with pre-filled 1-click contact links.
+7. **Error Circuit Breaker:** An `Error Trigger` node wired to an instant alert channel so silent failures are impossible.
 
 ### Path B — When Building a Stateful AI Agent (`Option 3`)
 Enforce three mandatory architectural boundaries:

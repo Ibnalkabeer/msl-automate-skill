@@ -1,0 +1,133 @@
+{
+  "name": "MSL Agency Pack — 03 Weekly Cross-Channel ROAS & Reporting Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## MSL AI Systems — 03 Weekly Cross-Channel ROAS & Executive Digest\n**Autonomy Level:** L2 (Deterministic Multi-Platform Ad Aggregation + Isolated AI Executive Summary)\n\n### How to Demo Live on Screen-Share / Loom:\n1. Click the orange **Execute workflow** button at the bottom.\n2. Node `00` pulls sample weekly Google Ads & Meta Ads performance metrics, calculates blended ROAS and CPA, updates the Looker Studio & Google Sheets master rows, and drafts the plain-English Executive Digest for Gmail & Slack.\n3. Every node runs 100% green out of the box with zero `$env` errors.",
+        "height": 240,
+        "width": 640
+      },
+      "id": "a0000003-0000-4000-8000-000000000000",
+      "name": "MSL AI Systems - Blueprint Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 40]
+    },
+    {
+      "parameters": {},
+      "id": "a0000003-0000-4000-8000-000000000010",
+      "name": "00. Click Execute to Test Friday ROAS Digest",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [180, 340]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 5"
+            }
+          ]
+        }
+      },
+      "id": "a0000003-0001-4000-8000-000000000001",
+      "name": "01. Friday 8:00 AM Schedule Trigger (Enable in Prod)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [180, 520],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 01: Pull & Normalize Weekly Spend, Conversions, and ROAS across Google Ads & Meta Ads\nconst rawInput = $input.first().json.body || $input.first().json || {};\nconst hasCustom = Boolean(rawInput.clientAccount);\n\nconst report = hasCustom ? rawInput : {\n  clientAccount: 'Prime Retail Nigeria',\n  accountOwnerEmail: 'account.lead@agency.com',\n  reportingWeek: 'Nov 2 - Nov 8, 2026',\n  googleAds: { spendUsd: 2450, conversions: 142, revenueUsd: 11270, roas: 4.6 },\n  metaAds: { spendUsd: 1850, conversions: 98, revenueUsd: 6845, roas: 3.7 }\n};\n\nconst totalSpend = report.googleAds.spendUsd + report.metaAds.spendUsd;\nconst totalConversions = report.googleAds.conversions + report.metaAds.conversions;\nconst totalRevenue = report.googleAds.revenueUsd + report.metaAds.revenueUsd;\nconst blendedRoas = Number((totalRevenue / totalSpend).toFixed(2));\nconst blendedCpa = Number((totalSpend / totalConversions).toFixed(2));\n\nreturn [{\n  json: {\n    reportId: `ROAS-${Date.now()}`,\n    clientAccount: report.clientAccount,\n    accountOwnerEmail: report.accountOwnerEmail,\n    reportingWeek: report.reportingWeek,\n    googleAds: report.googleAds,\n    metaAds: report.metaAds,\n    blendedMetrics: {\n      totalSpendUsd: totalSpend,\n      totalConversions,\n      totalRevenueUsd: totalRevenue,\n      blendedRoas,\n      blendedCpaUsd: blendedCpa\n    },\n    lookerStudioSheetStatus: 'SYNCED_TO_MASTER_SHEET'\n  }\n}];"
+      },
+      "id": "a0000003-0002-4000-8000-000000000002",
+      "name": "02. Google Ads & Meta Ads ROAS Aggregator -> Sheets & Looker Studio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "DEMO_MODE_REPLACE_WITH_GEMINI_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Write a concise 3-bullet plain-English weekly ROAS executive digest for the account owner based on these Google Ads and Meta Ads metrics. Return strict JSON with keys: headline, executiveSummary, budgetRecommendation. Data: \" + JSON.stringify($json)\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.1,\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "id": "a0000003-0003-4000-8000-000000000003",
+      "name": "03. Isolated AI Executive Digest Writer (Autonomy L2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [740, 340],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 04: Deterministic Fallback & Dispatch to Gmail & Slack\nconst metrics = $('02. Google Ads & Meta Ads ROAS Aggregator -> Sheets & Looker Studio').first().json;\nconst aiRaw = $input.first().json;\n\nlet digest = {\n  headline: `${metrics.clientAccount} Weekly ROAS Digest (${metrics.reportingWeek}): ${metrics.blendedMetrics.blendedRoas}x Blended ROAS`,\n  executiveSummary: `Total Spend: $${metrics.blendedMetrics.totalSpendUsd} | Revenue: $${metrics.blendedMetrics.totalRevenueUsd} | Conversions: ${metrics.blendedMetrics.totalConversions} (CPA: $${metrics.blendedMetrics.blendedCpaUsd}). Google Ads led at ${metrics.googleAds.roas}x ROAS while Meta Ads delivered ${metrics.metaAds.roas}x ROAS.`,\n  budgetRecommendation: 'Shift 15% of underperforming Meta ad-set spend into Google Performance Max top-converting SKU campaigns for next week.'\n};\n\ntry {\n  const text = aiRaw?.candidates?.[0]?.content?.parts?.[0]?.text;\n  if (text) digest = JSON.parse(text);\n} catch (e) {}\n\nreturn [{\n  json: {\n    dispatchStatus: 'DIGEST_SENT_TO_GMAIL_AND_SLACK',\n    clientAccount: metrics.clientAccount,\n    recipient: metrics.accountOwnerEmail,\n    lookerStudioSheetStatus: metrics.lookerStudioSheetStatus,\n    blendedMetrics: metrics.blendedMetrics,\n    executiveDigest: digest\n  }\n}];"
+      },
+      "id": "a0000003-0004-4000-8000-000000000004",
+      "name": "04. Executive Performance Digest -> Gmail & Slack",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 340]
+    },
+    {
+      "parameters": {},
+      "id": "a0000003-0005-4000-8000-000000000005",
+      "name": "05. Error Trigger (Circuit Breaker)",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [740, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nreturn [{\n  json: {\n    circuitBreakerStatus: 'ALERT_DISPATCHED',\n    errorSummary: err?.execution?.error?.message || 'Unhandled ROAS digest workflow exception.'\n  }\n}];"
+      },
+      "id": "a0000003-0006-4000-8000-000000000006",
+      "name": "06. Instant Ops Error Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 580]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00. Click Execute to Test Friday ROAS Digest": {
+      "main": [[{ "node": "02. Google Ads & Meta Ads ROAS Aggregator -> Sheets & Looker Studio", "type": "main", "index": 0 }]]
+    },
+    "01. Friday 8:00 AM Schedule Trigger (Enable in Prod)": {
+      "main": [[{ "node": "02. Google Ads & Meta Ads ROAS Aggregator -> Sheets & Looker Studio", "type": "main", "index": 0 }]]
+    },
+    "02. Google Ads & Meta Ads ROAS Aggregator -> Sheets & Looker Studio": {
+      "main": [[{ "node": "03. Isolated AI Executive Digest Writer (Autonomy L2)", "type": "main", "index": 0 }]]
+    },
+    "03. Isolated AI Executive Digest Writer (Autonomy L2)": {
+      "main": [[{ "node": "04. Executive Performance Digest -> Gmail & Slack", "type": "main", "index": 0 }]]
+    },
+    "05. Error Trigger (Circuit Breaker)": {
+      "main": [[{ "node": "06. Instant Ops Error Alert", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

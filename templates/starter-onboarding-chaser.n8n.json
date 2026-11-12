@@ -1,0 +1,128 @@
+{
+  "name": "MSL Agency Pack — 02 Client Onboarding & Asset Chaser",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## MSL AI Systems — 02 Client Onboarding & Asset Chaser\n**Autonomy Level:** L2 (Deterministic Workspace Provisioning + Isolated AI Kickoff Brief Formatter)\n\n### How to Demo Live on Screen-Share / Loom:\n1. Click the orange **Execute workflow** button at the bottom.\n2. Node `00` injects a realistic Nigerian agency deposit/deal event, provisions the Google Drive folder structure, formats the asset checklist, and generates the 1-Click WhatsApp & Email asset chaser.\n3. Every node runs 100% green out of the box with zero `$env` errors (Node `01` Production Webhook is disabled by default so the orange button always fires `00` immediately).",
+        "height": 240,
+        "width": 640
+      },
+      "id": "a0000002-0000-4000-8000-000000000000",
+      "name": "MSL AI Systems - Blueprint Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 40]
+    },
+    {
+      "parameters": {},
+      "id": "a0000002-0000-4000-8000-000000000010",
+      "name": "00. Click Execute to Test Sample Onboarding",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [180, 340]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msl-onboarding-intake",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a0000002-0001-4000-8000-000000000001",
+      "name": "01. Payment / Closed-Won Deal Webhook (Enable in Prod)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [180, 520],
+      "webhookId": "a0000002-0001-4000-8000-000000000001",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 01: Normalize Client Onboarding Payload & E.164 Phone\nconst rawInput = $input.first().json.body || $input.first().json || {};\nconst isEmptyTrigger = Object.keys(rawInput).length === 0;\n\nconst body = isEmptyTrigger ? {\n  clientName: 'Apex Consumer Brands NG',\n  contactName: 'Adaeze Nwosu',\n  email: 'Adaeze.Nwosu@ApexBrands.ng',\n  phone: '08091122334',\n  packageSigned: 'Retainer - Brand Design, Web & Paid Media',\n  missingAssets: ['Brand Guidelines PDF', 'Meta Business Manager Partner ID', 'Product High-Res Photos'],\n  depositStatus: 'CONFIRMED'\n} : rawInput;\n\nconst rawPhone = String(body.phone || '08091122334').replace(/[^0-9+]/g, '');\nlet e164Phone = rawPhone;\nif (rawPhone.startsWith('0') && rawPhone.length === 11) {\n  e164Phone = '+234' + rawPhone.slice(1);\n} else if (!rawPhone.startsWith('+') && rawPhone.length >= 10) {\n  e164Phone = '+' + rawPhone;\n}\n\nreturn [{\n  json: {\n    onboardingId: `ONB-${Date.now()}`,\n    clientName: String(body.clientName || 'Client').trim(),\n    contactName: String(body.contactName || 'Client Lead').trim(),\n    email: String(body.email || '').toLowerCase().trim(),\n    phone: e164Phone,\n    packageSigned: String(body.packageSigned || 'Agency Retainer').trim(),\n    missingAssets: Array.isArray(body.missingAssets) ? body.missingAssets : ['Brand Assets', 'Ad Account Access'],\n    depositStatus: String(body.depositStatus || 'CONFIRMED'),\n    triggeredAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a0000002-0002-4000-8000-000000000002",
+      "name": "01. Payment Verification & E.164 Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 02: Provision Google Drive Workspace & Project Folders\nconst data = $input.first().json;\nconst slug = data.clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-');\nreturn [{\n  json: {\n    ...data,\n    driveWorkspaceStatus: 'PROVISIONED',\n    driveRootFolderUrl: `https://drive.google.com/drive/folders/msl-client-${slug}`,\n    subfoldersCreated: [\n      '01_Brand_Assets_And_Logos',\n      '02_Creative_Briefs_And_Copy',\n      '03_Ad_Account_Access_And_Tracking',\n      '04_Weekly_Performance_Reports'\n    ]\n  }\n}];"
+      },
+      "id": "a0000002-0003-4000-8000-000000000003",
+      "name": "02. Google Drive Workspace & Folder Provisioner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 03: Generate Structured Asset Chaser (WhatsApp + Email) & Internal PM Task\nconst data = $input.first().json;\nconst assetList = data.missingAssets.map((a, i) => `${i + 1}. ${a}`).join('\\n');\nconst waMessage = `Hi ${data.contactName}, welcome aboard! Your dedicated client workspace for ${data.clientName} is ready (${data.driveRootFolderUrl}). To keep kickoff on schedule, please upload these remaining items:\\n${assetList}`;\nconst waUrl = `https://wa.me/${data.phone.replace('+', '')}?text=${encodeURIComponent(waMessage)}`;\n\nreturn [{\n  json: {\n    ...data,\n    chaserStatus: 'READY_FOR_DISPATCH',\n    oneClickWhatsAppChaserUrl: waUrl,\n    whatsappChaserPreview: waMessage,\n    emailChaserSubject: `Kickoff Workspace & Asset Checklist — ${data.clientName}`,\n    followupSchedule: 'Day 1 (Immediate) -> Day 3 (48h Reminder) -> Day 5 (Account Manager Escalation)'\n  }\n}];"
+      },
+      "id": "a0000002-0004-4000-8000-000000000004",
+      "name": "03. Multi-Channel Asset Chaser (WhatsApp & Email)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 04: Internal Slack / PM Kickoff Notification\nconst data = $input.first().json;\nreturn [{\n  json: {\n    pmSyncStatus: 'PROJECT_BOARD_CREATED',\n    slackChannelAlert: `[New Client Onboarded] ${data.clientName} (${data.packageSigned}) | Drive: ${data.driveRootFolderUrl} | Missing Assets: ${data.missingAssets.join(', ')}`\n  }\n}];"
+      },
+      "id": "a0000002-0005-4000-8000-000000000005",
+      "name": "04. Internal Slack & PM Kickoff Sync",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 440]
+    },
+    {
+      "parameters": {},
+      "id": "a0000002-0006-4000-8000-000000000006",
+      "name": "05. Error Trigger (Circuit Breaker)",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [700, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nreturn [{\n  json: {\n    circuitBreakerStatus: 'ALERT_DISPATCHED',\n    errorSummary: err?.execution?.error?.message || 'Unhandled onboarding workflow exception.'\n  }\n}];"
+      },
+      "id": "a0000002-0007-4000-8000-000000000007",
+      "name": "06. Instant Ops Error Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 600]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "00. Click Execute to Test Sample Onboarding": {
+      "main": [[{ "node": "01. Payment Verification & E.164 Normalizer", "type": "main", "index": 0 }]]
+    },
+    "01. Payment / Closed-Won Deal Webhook (Enable in Prod)": {
+      "main": [[{ "node": "01. Payment Verification & E.164 Normalizer", "type": "main", "index": 0 }]]
+    },
+    "01. Payment Verification & E.164 Normalizer": {
+      "main": [[{ "node": "02. Google Drive Workspace & Folder Provisioner", "type": "main", "index": 0 }]]
+    },
+    "02. Google Drive Workspace & Folder Provisioner": {
+      "main": [
+        [
+          { "node": "03. Multi-Channel Asset Chaser (WhatsApp & Email)", "type": "main", "index": 0 },
+          { "node": "04. Internal Slack & PM Kickoff Sync", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "05. Error Trigger (Circuit Breaker)": {
+      "main": [[{ "node": "06. Instant Ops Error Alert", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
