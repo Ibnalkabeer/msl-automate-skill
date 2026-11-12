@@ -7,7 +7,7 @@
 
 **Stop prompting AI to generate giant, broken n8n JSONs or over-engineered autonomous agents when a 5-node deterministic workflow solves the problem.**
 
-`/automate` is a permanent AI Operating System (AIOS) skill engineered by **MSL AI Systems** (`https://portfolio-msl.lovable.app/`). It turns any business bottleneck, operational audit report, or plain-English automation idea into a verified **n8n workflow** or **stateful AI agent** using a strict 4-stage engineering pipeline.
+`/automate` is a permanent AI Operating System (AIOS) skill engineered by **MSL AI Systems** (`https://msl-portfolio.vercel.app/`). It turns any business bottleneck, operational audit report, or plain-English automation idea into a verified **n8n workflow** or **stateful AI agent** using a strict 4-stage engineering pipeline.
 
 ---
 
